@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 # */AIPND/intropylab-classifying-images/check_images.py
 #
-# TODO: 0. Fill in your information in the programming header below
-# PROGRAMMER:
-# DATE CREATED:
+# Fill in your information in the programming header below
+# PROGRAMMER: Mohamed A. Farouk
+# DATE CREATED: 22/08/2019
 # REVISED DATE:             <=(Date Revised - if any)
 # REVISED DATE: 05/14/2018 - added import statement that imports the print
 #                           functions that can be used to check the lab
@@ -34,13 +34,13 @@ from print_functions_for_lab_checks import *
 
 
 def main():
-    # TODO: 1. Define start_time to measure total program runtime by
+    # 1. Define start_time to measure total program runtime by
     # collecting start time
-    start_time = None
+    start_time = time()
 
-    # TODO: 2. Define get_input_args() function to create & retrieve command
-    # line arguments
+    # get command line arguments
     in_arg = get_input_args()
+    # check_command_line_arguments(in_arg)
 
     # TODO: 3. Define get_pet_labels() function to create pet image labels by
     # creating a dictionary with key=filename and value=file label to be used
@@ -69,11 +69,16 @@ def main():
 
     # TODO: 1. Define end_time to measure total program runtime
     # by collecting end time
-    end_time = None
+    end_time = time()
 
     # TODO: 1. Define tot_time to computes overall runtime in
     # seconds & prints it in hh:mm:ss format
-    tot_time = None
+    tot_seconds = end_time - start_time
+    hours = round(tot_seconds / 3600)
+    mins = round((tot_seconds % 3600) / 60)
+    secs = round((tot_seconds % 3600) % 60)
+
+    tot_time = "{}:{}:{}".format(hours, mins, secs)
     print("\n** Total Elapsed Runtime:", tot_time)
 
 
@@ -99,7 +104,16 @@ def get_input_args():
     Returns:
      parse_args() -data structure that stores the command line arguments object  
     """
-    pass
+    parser = argparse.ArgumentParser(
+        description="Check images using a certain CNN model")
+    parser.add_argument('--dir', type=str, default='pet_images/',
+                        help="Path to images files directory")
+    parser.add_argument('--arch', type=str, default='vgg',
+                        help='CNN model architecture to use for image classification(default - pick any of the following vgg, alexnet, resnet)')
+    parser.add_argument('--dogfile', type=str, default='dognames.txt',
+                        help='Text file that contains all labels associated to dogs(default -"dognames.txt")')
+
+    return parser.parse_args()
 
 
 def get_pet_labels():
