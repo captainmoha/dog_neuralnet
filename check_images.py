@@ -22,17 +22,20 @@
 # Imports python modules
 import argparse
 from time import time, sleep
-from os import listdir
-
+from os import listdir, mkdir
+from os.path import exists, isfile
+from random import randint
 # Imports classifier function for using CNN to classify images
 from classifier import classifier
 
 # Imports print functions that check the lab
 from print_functions_for_lab_checks import *
 
+# Imports for using PIL to add classification labels to images
+from PIL import Image, ImageDraw, ImageFont
+
+
 # Main program function defined below
-
-
 def main():
     # 1. Define start_time to measure total program runtime by
     # collecting start time
@@ -42,16 +45,17 @@ def main():
     in_arg = get_input_args()
     # check_command_line_arguments(in_arg)
 
-    # TODO: 3. Define get_pet_labels() function to create pet image labels by
-    # creating a dictionary with key=filename and value=file label to be used
-    # to check the accuracy of the classifier function
-    answers_dic = get_pet_labels()
+    # create pet image labels by creating a dictionary with key=filename and value=file label
+    #  to be used to check the accuracy of the classifier function
+    answers_dic = get_pet_labels(in_arg.dir)
 
     # TODO: 4. Define classify_images() function to create the classifier
     # labels with the classifier function using in_arg.arch, comparing the
     # labels, and creating a dictionary of results (result_dic)
-    result_dic = classify_images()
+    result_dic = classify_images(in_arg.dir, answers_dic, in_arg.arch)
+    label_images(result_dic, in_arg.dir)
 
+    check_classifying_images(result_dic)
     # TODO: 5. Define adjust_results4_isadog() function to adjust the results
     # dictionary(result_dic) to determine if classifier correctly classified
     # images as 'a dog' or 'not a dog'. This demonstrates if the model can
@@ -116,7 +120,7 @@ def get_input_args():
     return parser.parse_args()
 
 
-def get_pet_labels():
+def get_pet_labels(image_dir):
     """
     Creates a dictionary of pet labels based upon the filenames of the image 
     files. Reads in pet filenames and extracts the pet image labels from the 
@@ -129,10 +133,24 @@ def get_pet_labels():
      petlabels_dic - Dictionary storing image filename (as key) and Pet Image
                      Labels (as value)  
     """
-    pass
+
+    petlabels_dic = {}
+    filenames_list = listdir(image_dir)
+    # print(len(filenames_list))
+
+    for filename in filenames_list:
+        if not isfile('{}/{}'.format(image_dir, filename)):
+            continue
+        label = filename[0:-4].lower()  # remove file extension
+        label = " ".join(label.split("_")[:-1])    # remove digits from name & make label str 
+        petlabels_dic[filename] = label
+    
+    # print(petlabels_dic)
+    return petlabels_dic
 
 
-def classify_images():
+
+def classify_images(images_dir, petlabel_dic, model):
     """
     Creates classifier labels with classifier function, compares labels, and 
     creates a dictionary containing both labels and comparison of them to be
@@ -157,8 +175,42 @@ def classify_images():
                     idx 2 = 1/0 (int)   where 1 = match between pet image and 
                     classifer labels and 0 = no match between labels
     """
-    pass
 
+    results_dic = {}
+
+    for img_name, label in petlabel_dic.items():
+        image_attrs = [label]
+        img_classification = classifier(images_dir + img_name, model).lower()
+        image_attrs.append(img_classification)
+        
+        
+        image_attrs.append(check_match(img_classification, label))
+        
+        print('{:<50} is classified as: {:<40}'.format(
+            img_name, img_classification))
+        results_dic[img_name] = image_attrs
+
+    return results_dic
+
+
+
+def check_match(classification_str, label):
+    classification_list = classification_str.split(', ')
+
+    for classification in classification_list:
+
+        # handle special case where classification has multiple words seperated by space
+        has_space = classification.find(' ')
+        if has_space != -1:
+            multi_word_class = classification.split(' ')
+            if label in multi_word_class:
+                return 1
+            
+        if label in classification_list:
+            return 1
+
+    return 0
+        
 
 def adjust_results4_isadog():
     """
@@ -248,6 +300,52 @@ def print_results():
            None - simply printing results.
     """
     pass
+
+def label_images(results_dic, img_dir):
+
+    results_dir = img_dir + '/labeled_imgs'
+    
+    
+    x, y = 30, 50 # text position
+    color = 'rgb(255, 255, 255)'
+    border_color = 'rgb(0, 0, 0)'
+    
+    if not exists(results_dir):
+        mkdir(results_dir)
+
+    # label images with classification
+    print(len(results_dic))
+    print("#################")
+    for img_name, img_result in results_dic.items():
+        
+        # classification result label
+        img_lbl = '\n'.join(img_result[1].title().split(', '))
+
+        # open image to add label to it
+        img = Image.open(img_dir + img_name)
+        draw = ImageDraw.Draw(img)
+        
+        font_size = int(img.size[0] * .1) # adapt fontsize to image width
+
+        font = ImageFont.truetype('fonts/Roboto-Bold.ttf', font_size)
+        # draw border
+        draw.text((x-1, y-1), img_lbl, font=font, fill=border_color)
+        draw.text((x+1, y-1), img_lbl, font=font, fill=border_color)
+        draw.text((x-1, y+1), img_lbl, font=font, fill=border_color)
+        draw.text((x+1, y+1), img_lbl, font=font, fill=border_color)
+
+        # draw  text
+        draw.text((x, y), img_lbl, fill=color, font=font)
+        img_path = '{}labeled_imgs/{}.jpg'.format(img_dir, img_result[1])
+
+        # if another image has same classification, add a rand number suffix to its name
+        if exists(img_path): 
+            img.save('{}{}{}'.format(img_path[:-4], randint(1, 1000), img_path[-4:]))
+        else:
+            img.save(img_path)
+
+
+
 
 
 # Call to main function to run the program
