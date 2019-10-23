@@ -85,12 +85,6 @@ def main():
     print("\n** Total Elapsed Runtime:", tot_time)
 
 
-# TODO: 2.-to-7. Define all the function below. Notice that the input
-# parameters and return values have been left in the function's docstrings.
-# This is to provide guidance for achieving a solution similar to the
-# instructor provided solution. Feel free to ignore this guidance as long as
-# you are able to achieve the desired outcomes with this lab.
-
 def get_input_args():
     """
     Retrieves and parses the command line arguments created and defined using
@@ -261,16 +255,8 @@ def adjust_results4_isadog(results_dic, dogsfile):
 
 
         results_dic[img_name].extend((is_dog, is_dog_classified))
-        pprinter.pprint(results_dic[img_name])
         # print(results_dic[img_name])
         
-
-                
-
-
-    
-        
-
 
 def calculates_results_stats(results_dic):
     """
@@ -308,8 +294,6 @@ def calculates_results_stats(results_dic):
 
     results_stats['n_images'] = len(results_dic)
 
-    
-
     for image_data in results_dic.values():
 
         # if there is a match in general (not just for dogs)
@@ -330,9 +314,7 @@ def calculates_results_stats(results_dic):
         if image_data[3] == image_data[4] == 0:
             n_correct_not_dogs += 1
         
-        
-        
-        
+    # update stats dic
     results_stats['n_notdogs_img'] = results_stats['n_images'] - results_stats['n_dogs_img']
     if results_stats['n_dogs_img']:
         results_stats['pct_correct_dogs'] = round((n_correct_dogs / results_stats['n_dogs_img']) * 100, 1)
@@ -415,7 +397,6 @@ def print_results(result_dic, results_stats, model, print_incorrect_dogs=True, p
         print('\n'.join(wrong_breeds_list))
     
 
-
 def label_images(results_dic, img_dir):
 
     results_dir = img_dir + '/labeled_imgs'
@@ -466,3 +447,4 @@ def label_images(results_dic, img_dir):
 # Call to main function to run the program
 if __name__ == "__main__":
     main()
+
