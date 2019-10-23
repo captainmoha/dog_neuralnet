@@ -34,6 +34,8 @@ from print_functions_for_lab_checks import *
 # Imports for using PIL to add classification labels to images
 from PIL import Image, ImageDraw, ImageFont
 
+# prettypring for debugging
+import pprint
 
 # Main program function defined below
 def main():
@@ -46,26 +48,26 @@ def main():
     # check_command_line_arguments(in_arg)
 
     # create pet image labels by creating a dictionary with key=filename and value=file label
-    #  to be used to check the accuracy of the classifier function
+    # to be used to check the accuracy of the classifier function
     answers_dic = get_pet_labels(in_arg.dir)
 
-    # TODO: 4. Define classify_images() function to create the classifier
-    # labels with the classifier function using in_arg.arch, comparing the
-    # labels, and creating a dictionary of results (result_dic)
+    # create the classifier labels with the classifier function using in_arg.arch, 
+    # comparing the labels, and creating a dictionary of results (result_dic)
     result_dic = classify_images(in_arg.dir, answers_dic, in_arg.arch)
+
+    # extra: annotate images with classification
     label_images(result_dic, in_arg.dir)
-
+    # check classification
     check_classifying_images(result_dic)
-    # TODO: 5. Define adjust_results4_isadog() function to adjust the results
-    # dictionary(result_dic) to determine if classifier correctly classified
-    # images as 'a dog' or 'not a dog'. This demonstrates if the model can
-    # correctly classify dog images as dogs (regardless of breed)
-    adjust_results4_isadog()
 
-    # TODO: 6. Define calculates_results_stats() function to calculate
-    # results of run and puts statistics in a results statistics
-    # dictionary (results_stats_dic)
-    results_stats_dic = calculates_results_stats()
+    # adjust the results dictionary(result_dic) to determine if classifier correctly classified
+    # images as 'a dog' or 'not a dog'. This demonstrates if the model can 
+    # correctly classify dog images as dogs (regardless of breed)
+    adjust_results4_isadog(result_dic, in_arg.dogfile)
+    check_classifying_labels_as_dogs(result_dic)
+
+    # calculate results of run and puts statistics in a results statistics dictionary (results_stats_dic)
+    results_stats_dic = calculates_results_stats(result_dic)
 
     # TODO: 7. Define print_results() function to print summary results,
     # incorrect classifications of dogs and breeds if requested.
@@ -186,8 +188,8 @@ def classify_images(images_dir, petlabel_dic, model):
         
         image_attrs.append(check_match(img_classification, label))
         
-        print('{:<50} is classified as: {:<40}'.format(
-            img_name, img_classification))
+        # print('{:<50} is classified as: {:<40}'.format(
+        #     img_name, img_classification))
         results_dic[img_name] = image_attrs
 
     return results_dic
@@ -212,7 +214,7 @@ def check_match(classification_str, label):
     return 0
         
 
-def adjust_results4_isadog():
+def adjust_results4_isadog(results_dic, dogsfile):
     """
     Adjusts the results dictionary to determine if classifier correctly 
     classified images 'as a dog' or 'not a dog' especially when not a match. 
@@ -240,10 +242,40 @@ def adjust_results4_isadog():
     Returns:
            None - results_dic is mutable data type so no return needed.
     """
-    pass
+    pprinter = pprint.PrettyPrinter(indent=4)
+
+    dogs_dic = {}
+
+    # load list of dogs breeds from dognames file
+    if exists(dogsfile):
+        dogs_lines = open(dogsfile).readlines()
+        for line in dogs_lines:
+            dogs_dic[line.rstrip()] = 1
+    else:
+        print("{} Does not exist please add or make sure path is correct".format(dogsfile))
+        return
+    
+    for img_name, img_data in results_dic.items():
+        real_label = img_data[0]
+        classifier_label = img_data[1]
+        
+        is_dog = int(real_label in dogs_dic)
+        is_dog_classified = int(classifier_label in dogs_dic)
 
 
-def calculates_results_stats():
+        results_dic[img_name].extend((is_dog, is_dog_classified))
+        pprinter.pprint(results_dic[img_name])
+        # print(results_dic[img_name])
+        
+
+                
+
+
+    
+        
+
+
+def calculates_results_stats(results_dic):
     """
     Calculates statistics of the results of the run using classifier's model 
     architecture on classifying images. Then puts the results statistics in a 
@@ -267,9 +299,57 @@ def calculates_results_stats():
                      name (starting with 'pct' for percentage or 'n' for count)
                      and the value is the statistic's value 
     """
-    pass
+    
+    results_stats = {'n_imgs': 0, 'n_dogs': 0, 'n_not_dogs': 0,
+                     'pct_correct_dog': 0.0, 'pct_correct_not_dog': 0.0, 'pct_correct_breed': 0.0
+    }
 
+    n_correct_breeds = 0
+    n_correct_dogs = 0
+    n_correct_not_dogs = 0
+    n_matches = 0
 
+    results_stats['n_imgs'] = len(results_dic)
+
+    
+
+    for image_data in results_dic.values():
+
+        # if there is a match in general (not just for dogs)
+        if image_data[2]:
+            n_matches += 1
+
+        # count dogs
+        if image_data[3]:
+            results_stats['n_dogs'] += 1
+        
+        # it is a dog and classified as a dog
+        if image_data[3] and image_data[4]:
+            n_correct_dogs += 1
+            if image_data[2]: # we got the breed right too!
+                n_correct_breeds += 1
+        
+        # not a dog and classified as such
+        if image_data[3] == image_data[4] == 0:
+            n_correct_not_dogs += 1
+        
+        
+        
+        
+    results_stats['n_not_dogs'] = results_stats['n_imgs'] - results_stats['n_dogs']
+    if results_stats['n_dogs']:
+        results_stats['pct_correct_dog'] = round((n_correct_dogs / results_stats['n_dogs']) * 100, 1)
+    if results_stats['n_not_dogs']:
+        results_stats['pct_correct_not_dogs'] = round((n_correct_not_dogs / results_stats['n_not_dogs']) * 100, 1)
+    if results_stats['n_dogs']:
+        results_stats['pct_correct_breed'] = round((n_correct_breeds / results_stats['n_dogs']) * 100, 1)
+
+    results_stats['pct_matches'] = round((n_matches / results_stats['n_imgs']) * 100, 1)
+    print(results_stats)
+
+    return results_stats
+        
+        
 def print_results():
     """
     Prints summary results on the classification and then prints incorrectly 
